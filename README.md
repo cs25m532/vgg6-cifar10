@@ -2,13 +2,14 @@
 
 CS6886W Assignment 1. A VGG6 (4 conv + 1 linear layer, BatchNorm, global average pooling) trained on CIFAR-10 with PyTorch, tracked with Weights & Biases (W&B).
 
-**PDF report link / GitHub link:** `<paste repo URL here>`
+**GitHub repository:** https://github.com/cs25m532/vgg6-cifar10
+**W&B project (all runs and plots):** https://wandb.ai/cs25m532-iitm-india/vgg6-cifar10
 
 ## Repository layout
 
 | File | Purpose |
 |---|---|
-| `data.py` | CIFAR-10 transforms, 45k/5k train/val split, loaders |
+| `data.py` | CIFAR-10 loading, 45k/5k train/val split, GPU-side augmentation and normalization |
 | `model.py` | VGG6 with configurable activation and BatchNorm |
 | `train.py` | Training loop, W&B logging, checkpointing (also the sweep entry point) |
 | `evaluate.py` | Evaluation function; CLI to evaluate a saved checkpoint |
@@ -19,8 +20,9 @@ CS6886W Assignment 1. A VGG6 (4 conv + 1 linear layer, BatchNorm, global average
 
 ## Environment
 
-- Python 3.9+, PyTorch >= 2.0 (tested with torch 2.8.0, torchvision 0.23.0, numpy 2.0.2, wandb 0.26.1, pandas 2.3.3)
-- GPU strongly recommended (Colab / Kaggle / CUDA machine). Apple MPS and CPU also work but are slow.
+- Reported results were produced on Google Colab (Tesla T4 GPU, CUDA 13.0 driver, Python 3.13, wandb 0.28.1, the PyTorch build preinstalled on the Colab runtime).
+- The code was also checked locally on Python 3.9.6 with torch 2.8.0, torchvision 0.23.0, numpy 2.0.2, wandb 0.26.1, pandas 2.3.3. `requirements.txt` lists the packages; any recent PyTorch >= 2.0 works.
+- A GPU is strongly recommended (Colab / Kaggle / CUDA machine). Apple MPS and CPU also work but are slow. The whole dataset is kept on the device, so no data-loader workers are needed.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
@@ -37,7 +39,7 @@ The 50k training images are split into 45k train / 5k validation with a fixed se
 
 ## Seeds and determinism
 
-`--seed` (default `42`) seeds Python, NumPy, PyTorch, CUDA and the DataLoader shuffling generator. `cudnn.deterministic=True`, `cudnn.benchmark=False`, and `torch.use_deterministic_algorithms(True, warn_only=True)` are enabled. The train/val split uses a fixed seed of `0`. Results on the same hardware and library versions should reproduce; different GPUs or library versions can differ slightly.
+`--seed` (default `42`) seeds Python, NumPy, PyTorch and CUDA, plus a `torch.Generator` on the device that drives the training shuffle order and the random crop, flip and Cutout. `cudnn.deterministic=True`, `cudnn.benchmark=False`, and `torch.use_deterministic_algorithms(True, warn_only=True)` are enabled. The train/val split uses a fixed seed of `0`. Results on the same hardware and library versions reproduce exactly (the best configuration was re-run twice on a Colab T4 and gave identical accuracy and identical weights); different GPUs or library versions can differ slightly.
 
 ## Run a single configuration
 
@@ -59,11 +61,13 @@ wandb sweep --project vgg6-cifar10 sweeps/sweep_activation.yaml   # 5 runs, 20 e
 wandb sweep --project vgg6-cifar10 sweeps/sweep_optimizer.yaml    # 18 runs, 15 epochs  (Q2b)
 wandb sweep --project vgg6-cifar10 sweeps/sweep_hparams.yaml      # 18 runs  (Q2c)
 wandb sweep --project vgg6-cifar10 sweeps/sweep_random.yaml       # random search for the parallel-coordinates plot
-wandb agent <entity>/vgg6-cifar10/<sweep_id>
-# limit random runs: wandb agent --count 40 <entity>/vgg6-cifar10/<sweep_id>
+wandb agent cs25m532-iitm-india/vgg6-cifar10/<sweep_id>
+# limit the random sweep: wandb agent --count 20 cs25m532-iitm-india/vgg6-cifar10/<sweep_id>
 ```
 
-Export a table of all runs: `python export_results.py --path <entity>/vgg6-cifar10`
+Export a table of all runs: `python export_results.py --path cs25m532-iitm-india/vgg6-cifar10`
+
+Notes on the reported runs: the activation (5), optimizer (18) and batch size/epochs/lr (18) grids plus about 35 random-search runs were run on Colab. After Colab disconnections, 7 grid configurations were re-run by hand with `train.py` using the same arguments and seed, so they have no sweep ID in W&B. All W&B plots are built at the project level.
 
 ## Final model (Q4)
 
