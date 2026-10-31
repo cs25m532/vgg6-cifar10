@@ -30,7 +30,7 @@ The results were produced on Google Colab with a Tesla T4 GPU:
 
 `requirements.txt` lists these versions. torch 2.11 needs Python 3.10 or newer. The code was also tested on Python 3.9.6 with torch 2.8.0 and torchvision 0.23.0, so any recent PyTorch (2.0 or newer) should work. The exact accuracy can differ slightly with another GPU or library version.
 
-A GPU is needed to run the sweeps in reasonable time. CPU and Apple MPS also work but are slow.
+A GPU is needed to run the sweeps in reasonable time. 
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
