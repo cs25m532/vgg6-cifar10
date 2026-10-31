@@ -83,7 +83,7 @@ python evaluate.py --checkpoint models/best_model.pt
 ```
 
 Sweep result: best val acc = 86.12 (epoch 30), test top-1 acc = 85.13.
-Re-run result (`models/best_model.pt`): `<update after the re-run>`.
+Re-run result (`models/best_model.pt`): best val acc = 86.12 (epoch 30), test top-1 acc = 85.13, exactly matching the sweep run (re-run on a Colab T4).
 
 ## Results and analysis
 
