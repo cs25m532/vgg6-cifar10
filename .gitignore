@@ -1,0 +1,7 @@
+data/
+wandb/
+checkpoints/
+__pycache__/
+.venv/
+results.csv
+.DS_Store

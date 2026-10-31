@@ -1,0 +1,20 @@
+program: train.py
+method: grid
+metric:
+  name: val_acc
+  goal: maximize
+parameters:
+  activation:
+    value: relu
+  optimizer:
+    values: [sgd, nesterov, adam, adagrad, rmsprop, nadam]
+  lr:
+    values: [0.1, 0.01, 0.001]
+  momentum:
+    value: 0.9
+  weight_decay:
+    value: 0.0005
+  batch_size:
+    value: 128
+  epochs:
+    value: 15
