@@ -70,18 +70,68 @@ Export a table of all runs: `python export_results.py --path <entity>/vgg6-cifar
 Best configuration by validation accuracy (from the W&B parallel-coordinates plot):
 
 ```
-<fill in after sweeps>
+activation=relu  optimizer=nesterov  lr=0.05  momentum=0.9  weight_decay=0.0005
+batch_size=64  epochs=30  scheduler=cosine  batch_norm=True  seed=42
 ```
 
 Reproduce and save the checkpoint:
 
 ```bash
-python train.py <flags of the best configuration> --save_path models/best_model.pt
+python train.py --activation relu --optimizer nesterov --lr 0.05 --momentum 0.9 \
+  --weight_decay 0.0005 --batch_size 64 --epochs 30 --seed 42 --save_path models/best_model.pt
 python evaluate.py --checkpoint models/best_model.pt
 ```
 
-Reported: best val acc = `<..>`, test top-1 acc = `<..>`.
+Sweep result: best val acc = 86.12 (epoch 30), test top-1 acc = 85.13.
+Re-run result (`models/best_model.pt`): `<update after the re-run>`.
 
 ## Results and analysis
 
-`<Fill in after sweeps: tables and discussion for activation, optimizer, and batch size / epochs / learning rate.>`
+All numbers are best validation accuracy (%) from a single seed (42), so gaps of about 1 point are within noise. Two identical runs (relu, nesterov, lr 0.05, bs 128, 20 epochs) gave exactly 83.54 val / 82.61 test, so runs are reproducible on the same setup.
+
+### Activation (nesterov, lr 0.05, bs 128, 20 epochs)
+
+| Activation | Val acc | Test acc |
+|---|---|---|
+| ReLU | 83.54 | 82.61 |
+| GELU | 83.04 | 82.54 |
+| SiLU | 81.60 | 80.76 |
+| Tanh | 72.68 | 71.78 |
+| Sigmoid | 61.74 | 61.16 |
+
+Sigmoid and Tanh saturate, so gradients shrink through the layers; Sigmoid is also not zero-centered and has a maximum slope of 0.25, which is why it trains slowest. Tanh is zero-centered with slope up to 1, so it does better but still trails. BatchNorm keeps both trainable but they remain well behind within 20 epochs. ReLU, GELU and SiLU do not saturate for positive inputs and are within about 2 points of each other; ReLU was best in this short budget, and the smooth GELU and SiLU did not give a measurable gain.
+
+### Optimizer (relu, bs 128, 15 epochs, momentum 0.9, wd 5e-4)
+
+| Optimizer | lr 0.001 | lr 0.01 | lr 0.1 |
+|---|---|---|---|
+| SGD (momentum) | 55.40 | 73.84 | 82.78 |
+| Nesterov SGD | 55.28 | 74.28 | 83.14 |
+| Adam | 79.86 | 77.02 | 36.78 |
+| Adagrad | 54.00 | 72.82 | 79.82 |
+| RMSprop | 75.42 | 55.06 | 36.66 |
+| Nadam | 79.80 | 79.80 | 33.78 |
+
+- SGD and Nesterov SGD need a large learning rate (0.1) and are slow at 0.001. Nesterov is about 0.4 points ahead of plain momentum at lr 0.1 and 0.01, which is within noise.
+- Adam and Nadam adapt the step per parameter, so they reach about 80% already at lr 0.001, but they break down at lr 0.1 (about 35%). Nadam (Adam with Nesterov momentum) behaves like Adam; it was more tolerant of lr 0.01.
+- Adagrad accumulates squared gradients, so its effective step keeps shrinking; it needs a large initial lr (best at 0.1) and is slow at 0.001.
+- RMSprop was best at lr 0.001 and degraded sharply at larger rates; here it also runs with momentum 0.9, which makes it less stable.
+- The best result among all optimizers in this table is SGD-style (Nesterov, lr 0.1). Adam-style optimizers need much smaller learning rates. Weight decay is applied as L2 for every optimizer.
+
+### Batch size, epochs and learning rate (relu, nesterov, momentum 0.9, wd 5e-4)
+
+| Batch size | Epochs | lr 0.01 | lr 0.05 |
+|---|---|---|---|
+| 64 | 10 | 74.26 | 80.66 |
+| 64 | 20 | 79.40 | 84.36 |
+| 64 | 30 | 82.50 | 86.12 |
+| 128 | 10 | 69.76 | 78.20 |
+| 128 | 20 | 76.28 | 83.54 |
+| 128 | 30 | 79.60 | 85.96 |
+| 256 | 10 | 64.82 | 75.36 |
+| 256 | 20 | 72.54 | 80.98 |
+| 256 | 30 | 75.76 | 84.02 |
+
+- More epochs help in every row; accuracy was still rising at 30 epochs, so the models are undertrained, not overfit.
+- A higher learning rate (0.05 vs 0.01) gives 4 to 11 points more in this short budget; 0.01 is too slow to converge in 10 to 30 epochs.
+- At a fixed number of epochs, smaller batches win (e.g. 30 epochs, lr 0.05: 86.12 / 85.96 / 84.02 for bs 64 / 128 / 256) because they make more weight updates per epoch and their gradients are noisier. Larger batches would need a larger learning rate to catch up.
