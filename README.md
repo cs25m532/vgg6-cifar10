@@ -20,8 +20,8 @@ CS6886W Assignment 1. A VGG6 (4 conv + 1 linear layer, BatchNorm, global average
 
 ## Environment
 
-- Reported results were produced on Google Colab (Tesla T4 GPU, CUDA 13.0 driver, Python 3.13, wandb 0.28.1, the PyTorch build preinstalled on the Colab runtime).
-- The code was also checked locally on Python 3.9.6 with torch 2.8.0, torchvision 0.23.0, numpy 2.0.2, wandb 0.26.1, pandas 2.3.3. `requirements.txt` lists the packages; any recent PyTorch >= 2.0 works.
+- Reported results were produced on Google Colab: Tesla T4 GPU, CUDA 13.0 driver, Python 3.13, torch 2.11.0 (+cu130), torchvision 0.26.0 (+cu130), numpy 2.1.3, pandas 2.2.3, wandb 0.28.1. `requirements.txt` pins these versions (Python 3.10+ needed for torch 2.11).
+- The code was also checked locally on Python 3.9.6 with torch 2.8.0, torchvision 0.23.0, numpy 2.0.2, wandb 0.26.1, pandas 2.3.3; any PyTorch >= 2.0 works, but exact numbers can differ slightly across versions and GPUs.
 - A GPU is strongly recommended (Colab / Kaggle / CUDA machine). Apple MPS and CPU also work but are slow. The whole dataset is kept on the device, so no data-loader workers are needed.
 
 ```bash
